@@ -1,0 +1,17 @@
+/* Reset */
+html, body, div, h1, canvas {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-size: 100%;
+  font: inherit;
+  vertical-align: baseline;
+}
+
+#instrument{
+	height:100px;
+	width:100px;
+	border:1px solid black;
+}
+
+
