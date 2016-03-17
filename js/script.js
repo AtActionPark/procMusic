@@ -18,35 +18,37 @@ var max = 1
 var pause = false;
 
 $(document).ready(function(){
+	//scale(rootNote,minOctave.maxOctave)    
+	var scale1= generateMinorScale('C',5,6)
+	var scale2= generateMinorScale('C',3,5)
+	var scale3= generateShitScale('C',1,3)
 
-	var scale1= generateMajorScale('C',0,8)
-	var scale2= generateMinorScale('A',0,8)
-	var scale3= generateMinorScale('A',2,3)
+	//sequence(length,scale,addNoteProba,silenceProba,density)
+	var seq1 = new Sequence(16,scale1,0.1,0.1,0.5)
+	var seq2 = new Sequence(16,scale2,0.4,0,0.8)
+	var seq3 = new Sequence(4,scale3,0,0.2,1)
 
-	var seq1 = new Sequence(16,scale1,0.3,0.1)
-	var seq2 = new Sequence(8,scale2,0.3,0.1)
-	var seq3 = new Sequence(3,scale3,0.3,0.1)
 
 	var instr1 = new Instrument(
 		new AudioContext,
-		[[0,'square']], //oscillators (detune,wave)
-		1.0, //attack peak level
-		0.2, //sustain level
+		[[0,'sine'],[5,'sine']], //oscillators (detune,wave)
+		0.8, //attack peak level
+		0.5, //sustain level
 		50.0, //attack
 		100.0, //decay
 		50.0) //release
 	var instr2 = new Instrument(
 		new AudioContext,
-		[[0,'sine']], //oscillators (detune,wave)
-		1.0, //attack peak level
-		0.5, //sustain level
+		[[0,'square'],[5,'sawtooth'],[-5,'sine']], //oscillators (detune,wave)
+		0.5, //attack peak level
+		0.2, //sustain level
 		50.0, //attack
 		100.0, //decay
 		50.0) //release
 	var instr3 = new Instrument(
 		new AudioContext,
-		[[0,'sawtooth'],[10,'sawtooth']], //oscillators (detune,wave)
-		0.5, //attack peak level
+		[[0,'sawtooth'],[5,'sine']], //oscillators (detune,wave)
+		0.6, //attack peak level
 		0.2, //sustain level
 		50.0, //attack
 		100.0, //decay
@@ -55,6 +57,7 @@ $(document).ready(function(){
 	var command1 = [instr1,seq1]
 	var command2 = [instr2,seq2]
 	var command3 = [instr3,seq3]
+
 	
 	var commandList = [command1,command2,command3]
 
@@ -95,12 +98,14 @@ function play(commandList){
 		while(c>sequence.length-1){
 			c-=sequence.length
 		}
-		sequence[c][0].forEach(function(n){
-	    	var freq = notes[n];
-	    	if(freq && !played[notes[n]]) {
-	        	playNote(instr,freq,sequence[c][0][1]*tempo-20);
-	        	played[notes[n]] = true;
-	    	}
+		sequence[c].forEach(function(n){
+			n.forEach(function(m){
+				var freq = notes[m];
+		    	if(freq && !played[notes[m]]) {
+		        	playNote(instr,freq,sequence[c][0][1]*tempo-20);
+		        	played[notes[m]] = true;
+		    	}
+			})
     	})  
 	}
     cursor += 1;
@@ -146,6 +151,16 @@ function generateMinorScale(rootNote, lowOctave,highOctave){
 	return extendScale(scale, lowOctave,highOctave);
 }
 
+function generateShitScale(rootNote, lowOctave,highOctave){
+	var scale = {};
+
+	scale[rootNote] = rootNotes[rootNote]
+	scale[getNextNote(rootNote,1)] = rootNotes[getNextNote(rootNote,1)]
+	scale[getNextNote(rootNote,5)] = rootNotes[getNextNote(rootNote,5)]
+
+	return extendScale(scale, lowOctave,highOctave);
+}
+
 function getNextNote(note,offset){
 	var notes = ['A','A#','B','C','C#','D','D#','E','F','F#','G','G#']
 	var indexOfNote = notes.indexOf(note)
@@ -168,11 +183,12 @@ function extendScale(scale, lowOctave,highOctave){
 
 
 
-var Sequence = function(length,scale,addNoteProba,silenceProba){
+var Sequence = function(length,scale,addNoteProba,silenceProba,density){
 	this.length = length;
 	this.scale = scale;
 	this.addNoteProba = addNoteProba;
 	this.silenceProba = silenceProba;
+	this.density = density;
 	this.sequence;
 	this.generateRandom()
 }
@@ -180,12 +196,12 @@ var Sequence = function(length,scale,addNoteProba,silenceProba){
 Sequence.prototype.generateRandom = function(){
 	var seq = new Array(this.length);
 	for(var i = 0;i<this.length;i++){
-		seq[i] = ([['-'],l])
+		seq[i] = [['-',1]]
 	}
 
 	for(var i = 0;i<this.length;i++){
 		var n = []
-		var l = Math.floor(Math.random()*3)+1
+		var l = getNoteLength2(this.length,this.density,i,true)
 		n.push([pickRandomProperty(this.scale),l])
 		if(Math.random()<this.addNoteProba)
 			n.push([pickRandomProperty(this.scale),l])
@@ -198,6 +214,20 @@ Sequence.prototype.generateRandom = function(){
 	}
 	this.sequence = seq;
 	console.log(seq)
+}
+
+getNoteLength = function(barLength,density,step,cut){
+	density = 1-density
+	var l = Math.floor(Math.random()*density*(barLength-1))+1
+	return cut? Math.min(l,barLength-step) :l
+}
+
+getNoteLength2 = function(barLength,density,step,cut){
+	density = 1-density
+	var min = Math.pow(density,2)*(barLength-1) +1
+	var max = Math.pow(density,1/1.2)*(barLength-1) +1
+	var l = Math.floor(Math.random()*max+min)
+	return cut? Math.min(l,barLength-step) :l
 }
 
 
@@ -216,6 +246,8 @@ var Instrument = function(context,osc,peakLevel,sustainLevel,attackTime,decayTim
 }
 
 Instrument.prototype.addVoice = function(freq){
+	if(this.voice && this.voice[freq])
+		this.voice[freq].stop()
 	this.voices[freq] = new Voice(
 		this.context,
 		freq,this.osc,
@@ -230,7 +262,6 @@ Instrument.prototype.addVoice = function(freq){
 Instrument.prototype.stopVoice = function(freq){
 	this.voices[freq].stop();
 	delete this.voices[freq]
-	
 }
 
 
