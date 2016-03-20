@@ -1,4 +1,3 @@
-var tempo = 150
 var rootNotes = {
 	'A': 440,
 	'A#':466.16,
@@ -13,15 +12,34 @@ var rootNotes = {
 	'G':783.99,
 	'G#':830.61
 }
-var cursor = 0;
-var max = 1
-var pause = true;
-var commandList;
+var waves = {
+	0:'sine',
+	1:'square',
+	2:'triangle',
+	3:'sawtooth',
+}
+var scales = {
+	0:'chromatic',
+	1:'major',
+	2:'naturalMinor',
+	3:'harmonicMinor',
+	4:'melodicMinor',
+	5:'dorian',
+	6:'phrygian',
+	7:'lydian',
+	8:'mixolydian',
+	9:'locrian',
+	10:'pentatonicMinorr',
+	11:'pentatonicMajor',
+	12:'V',
+	13:'shit',
+}
 
-var maxOscNumber = 4
-var minAttackLevel = 0.2;
+var tempo = 60.0
+var maxOscNumber = 3
+var minAttackLevel = 0.1;
 var maxAttackLevel = 1;
-var minSustainLevel = 0.2;
+var minSustainLevel = 0.1;
 var maxSustainLevel = 1;
 var minAttackTime = 1;
 var maxAttackTime = 1000;
@@ -30,14 +48,51 @@ var maxDecayTime = 1000;
 var minReleaseTime = 1;
 var maxReleaseTime = 1000;
 var maxDetune = 5;
-var seqPow2 = false;
+var seqPow2 = true;
+
+
+var run;
+var cursor = 0;
+var max = 1
+var pause = true;
+var commandList;
 
 
 $(document).ready(function(){
 	seed = 100*Math.random()
-	seed = 93.86953479189187
-	$('#seed').html(seed)
+	//seed = 56.60041030156877
+	//seed = 30.054835540931823
+	//seed = 93.86953479189187
+	//seed = 46.4236892293411
+	var p = new Pattern(8,5)
+	console.log(p.bjorklund(8,5))
 
+	$('#seed').html(seed)
+	tempo = 1/tempo*60*1000/4
+
+	var root = pickRandomProperty(rootNotes)
+	//commandList = RandomCommandList(3,root,1,5)
+	commandList = customSong()
+
+	$('#instrument').mousedown(function(){
+		pause = !pause
+		loop(commandList)
+	})
+});
+
+function newSong(){
+	reset()
+	var t = rand()
+	seqPow2 = t>0.5? true: false
+	var root = pickRandomProperty(rootNotes)
+	commandlist = []
+	commandList = RandomCommandList(2,root,1,5)
+	loop(commandList)
+	console.log(commandList)
+	
+}
+
+function customSong(){
 	//scale(rootNote,minOctave.maxOctave)    
 	var scale1= generateNaturalMinorScale('C',5,6)
 	var scale2= randomScale('C',3,5)
@@ -58,7 +113,7 @@ $(document).ready(function(){
 		50.0) //release
 	var instr2 = new Instrument(
 		new AudioContext,
-		[[0,'square'],[5,'sawtooth'],[-5,'sine']], //oscillators (detune,wave)
+		[[4,'triangle'],[5,'sawtooth'],[-5,'sine']], //oscillators (detune,wave)
 		0.5, //attack peak level
 		0.2, //sustain level
 		50.0, //attack
@@ -73,64 +128,18 @@ $(document).ready(function(){
 		100.0, //decay
 		50.0) //release
 
-	var root = pickRandomProperty(rootNotes)
-	scale1 = randomScale(root)
-	scale2 = randomScale(root)
-	scale3 = randomScale(root)
-	seq1 = randomSequence(scale1,true)
-	seq2 = randomSequence(scale2,true)
-	seq3 = randomSequence(scale3,true)
-	instr1 = randomInstrument(maxDetune)
-	instr2 = randomInstrument(maxDetune)
-	instr3 = randomInstrument(maxDetune)
-
 	var command1 = new Command(instr1,seq1)
 	var command2 = new Command(instr2,seq2)
 	var command3 = new Command(instr3,seq3)
 
-	
-	commandList = [command1,command2,command3]
-	console.log(commandList)
-
-	$('#instrument').mousedown(function(){
-		pause = !pause
-		loop(commandList)
-	})
-});
-
-function newSong(){
-	seed = 100*Math.random()
-	$('#seed').html(seed)
-	max = 1
-	cursor = 0;
-	for(var i = 0;i<commandList.length;i++){
-		commandList[i].kill()
-	}
-	commandList = []
-	var root = pickRandomProperty(rootNotes)
-	scale1 = randomScale(root)
-	scale2 = randomScale(root)
-	scale3 = randomScale(root)
-	seq1 = randomSequence(scale1,seqPow2)
-	seq2 = randomSequence(scale2,seqPow2)
-	seq3 = randomSequence(scale3,seqPow2)
-	instr1 = randomInstrument(maxDetune)
-	instr2 = randomInstrument(maxDetune)
-	instr3 = randomInstrument(maxDetune)
-
-	var command1 = new Command(instr1,seq1)
-	var command2 = new Command(instr2,seq2)
-	var command3 = new Command(instr3,seq3)
-
-	commandList = [command1,command2,command3]
-	loop(commandList)
+	return [command1,command2,command3]
 }
 
 function loop(commandList){
 	for(var i = 0;i<commandList.length;i++){
 		max = lcm(max,commandList[i].sequence.s.length)
 	}
-	setInterval(function(){play(commandList)}, tempo);
+	run = setInterval(function(){play(commandList)}, tempo);
 }
 
 function play(commandList){
@@ -156,7 +165,7 @@ function play(commandList){
 		        	played[notes[m]] = true;
 		    	}
 			})
-    	})  
+    })  
 	}
     cursor += 1;
     if(cursor>=max)
@@ -168,6 +177,19 @@ function playNote(instr,note,duration){
 	setTimeout(function(){
 		instr.stopVoice(note)
 	},duration)
+}
+
+function reset(){
+	clearInterval(run);
+	seed = 100*Math.random()
+	$('#seed').html(seed)
+	console.log(seed)
+	max = 1
+	cursor = 0;
+	for(var i = 0;i<commandList.length;i++){
+		commandList[i].kill()
+	}
+	pause = false;
 }
 
 
@@ -189,9 +211,10 @@ function randomInstrument(detune){
 		getRandomFloat(minReleaseTime,maxReleaseTime)) //release
 }
 function randomSequence(scale, pow2){
+	var addNote = rand()
 	if (pow2)
-		return new Sequence(getRandomPow2(),scale,rand(),rand(),rand())
-	return new Sequence(getRandomInt(2,32),scale,rand(),rand(),rand())
+		return new Sequence(getRandomPow2(),scale,rand(),rand()/2,rand())
+	return new Sequence(getRandomInt(2,32),scale,rand(),rand()/2,rand())
 }
 function randomScale(root,min,max){
 	var minOctave = getRandomInt(1,6);
@@ -203,7 +226,7 @@ function randomScale(root,min,max){
 	if(max)
 		maxOctave = max
 
-	var x = getRandomInt(0,12)
+	var x = parseInt(pickRandomProperty(scales))
 
 	switch(x){
 		case 0:
@@ -239,13 +262,13 @@ function randomScale(root,min,max){
 		case 10:
 			return generateMinorPentatonicScale(root,minOctave,maxOctave);
 			break;
-		case 10:
+		case 11:
 			return generateMajorPentatonicScale(root,minOctave,maxOctave);
 			break;
-		case 11:
+		case 12:
 			return generateVScale(root,minOctave,maxOctave);
 			break;
-		case 12:
+		case 13:
 			return generateShitScale(root,minOctave,maxOctave);
 			break;
 		default:
@@ -279,6 +302,17 @@ function extendScale(scale, lowOctave,highOctave){
 	return notes;
 }
 
+	
+var RandomCommandList = function(nb,root,min,max){
+	var list = []
+	scale = randomScale(root,min,max)
+		for(var i = 0;i<nb;i++){
+			var c = new Command()
+			c.randomize(root,min,max,scale)
+			list.push(c)
+		}
+		return list
+}
 
 
 var Command = function(instrument,sequence){
@@ -287,6 +321,18 @@ var Command = function(instrument,sequence){
 }
 Command.prototype.kill = function(){
 	this.instrument.kill()
+}
+Command.prototype.randomize = function(root,min,max,sc){
+	scale = randomScale(root,min,max)
+	if(sc)
+		scale = sc
+	sequence = randomSequence(scale,seqPow2)
+	instrument = randomInstrument(maxDetune)
+
+	this.instrument = instrument
+	this.sequence = sequence
+
+	return this
 }
 
 
@@ -378,7 +424,6 @@ Instrument.prototype.stopVoice = function(freq){
 		return
 	this.voices[freq].stop();
 }
-
 Instrument.prototype.kill = function(){
 	for(var i = 0;i<this.voices.length;i++){
 		this.voices[i].stop();
@@ -406,8 +451,7 @@ function Voice(context,frequency,osc,peakLevel,sustainLevel,attackTime,decayTime
   this.oscillators = [];
 
   this.gainNode = context.createGain();
-  this.gainNode.gain.value = 0;
-  	
+  this.gainNode.gain.value = 0;	
 };
 Voice.prototype.start = function() {
 	if(!this.context)
@@ -488,20 +532,14 @@ function getRandomInt(a,b){
 }
 
 function getRandomPow2(a,b){
-	return Math.pow(2,getRandomInt(1,5))
+	return Math.pow(2,getRandomInt(2,6))
 }
 
 function getRandomWave(){
-	var x = rand();
-	if(x<0.25)
-		return 'sine'
-	else if (x <0.5)
-		return 'square'
-	else if (x <0.75)
-		return 'sawtooth'
-	else 
-		return 'triangle'
+	return waves[pickRandomProperty(waves)]
 }
+
+
 
 
 
