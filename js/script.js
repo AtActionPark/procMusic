@@ -63,6 +63,7 @@ var falseSeed
 $(document).ready(function(){
 	seed = 100*Math.random()
 	//seed = 4-59.15919079982497
+	//seed = 4-82.47033844409417
 
 	$('#seed').html('Current : ' )
 	tempo = 1/tempo*60*1000/4
