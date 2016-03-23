@@ -37,9 +37,9 @@ var scales = {
 
 var tempo = 60.0
 var maxOscNumber = 4
-var minAttackLevel = 0.05;
+var minAttackLevel = 0.1;
 var maxAttackLevel = 1;
-var minSustainLevel = 0.05;
+var minSustainLevel = 0.1;
 var maxSustainLevel = 1;
 var minAttackTime = 1.0;
 var maxAttackTime = 500.0;
@@ -47,7 +47,7 @@ var minDecayTime = 1.0;
 var maxDecayTime = 500.0;
 var minReleaseTime = 1.0;
 var maxReleaseTime = 500.0;
-var maxDetune = 5;
+var maxDetune = 5
 var seqPow2 = true;
 var nbOfInstr = 3;
 
@@ -57,11 +57,12 @@ var cursor = 0;
 var max = 1
 var pause = true;
 var commandList;
+var falseSeed
 
 
 $(document).ready(function(){
 	seed = 100*Math.random()
-	//seed = 59.15919079982497
+	//seed = 4-59.15919079982497
 
 	$('#seed').html('Current : ' )
 	tempo = 1/tempo*60*1000/4
@@ -76,8 +77,14 @@ $(document).ready(function(){
 		event.preventDefault()
 		reset()
 		$('#play').html('PAUSE')
-		seed = $("#inputSeedVal").val();
-		$('#seed').html('Current : ' + seed)
+		falseSeed = $('#inputSeedVal').val()
+		console.log(falseSeed)
+		seed = falseSeed.match(/-(.*)/)[1]
+		maxOscNumber = falseSeed.match(/(\w*)/)[0]
+		$('#osc').val(maxOscNumber)
+
+		console.log(seed)
+		$('#seed').html('Current : ' + falseSeed)
 		generateRandomSong()
 	})
 });
@@ -261,9 +268,16 @@ function play(){
 
 function reset(){
 	clearInterval(run);
+	maxOscNumber = $('#osc').val()
+	maxAttackTime = $('#attack').val()
+	maxDecayTime = $('#decay').val()
+	maxReleaseTime = $('#release').val()
+	maxDetune = $('#detune').val()
+	
 	seed = 100*Math.random()
-	$('#seed').html('Current : ' + seed)
-	console.log(seed)
+	falseSeed = maxOscNumber + '-' + seed
+	$('#seed').html('Current : ' + falseSeed)
+	//console.log(falseSeed)
 	max = 1
 	cursor = 0;
 	for(var i = 0;i<commandList.length;i++){
@@ -274,16 +288,14 @@ function reset(){
 }
 
 function displayResult(){
-	$('#result').empty()
-	$('#result').append('</br>')
+	$('#volume').empty()
+	$('#volume').append('</br>Volume:</br></br>')
 	for(var i = 0;i<commandList.list.length;i++){
 		var type = commandList.list[i].instrument.drumType
 		if (typeof(type) == typeof(undefined))
 			type = 'instr' + i
-		if(i == 3)
-		$('#result').append('- - - - -</br></br>')
-		$('#result').append(type + " : " + commandList.list[i].sequence.s.length + " steps </br>")
-		$('#result').append('<input id="instrument'+i+'" type="range" value='+commandList.list[i].instrument.sustainLevel*100 + ' min=0 max=100></input></br>')
+		$('#volume').append(type + " ( " + commandList.list[i].sequence.s.length + " steps) </br>")
+		$('#volume').append('<input id="instrument'+i+'" type="range" value='+0.5*100 + ' min=0 max=100></input>')
 	}
 	reloadVolumes()
 }
@@ -291,19 +303,21 @@ function displayResult(){
 function reloadVolumes(){
 	$("#instrument0").on('input', function () {
 		var val = Math.max($(this).val()/100.0,0.00001)
-		commandList.list[0].instrument.currentSustainLevel = val*commandList.list[0].instrument.sustainLevel
-		commandList.list[0].instrument.currentPeakLevel = val*commandList.list[0].instrument.peakLevel
+		var biggest = Math.max(commandList.list[0].instrument.sustainLevel,commandList.list[0].instrument.peakLevel)
+		commandList.list[0].instrument.currentSustainLevel = val*commandList.list[0].instrument.sustainLevel/biggest
+		commandList.list[0].instrument.currentPeakLevel = val*commandList.list[0].instrument.peakLevel/biggest
 	});
 	$("#instrument1").on('input', function () {
 		var val = Math.max($(this).val()/100.0,0.00001)
-		commandList.list[1].instrument.currentSustainLevel = val*commandList.list[1].instrument.sustainLevel
-		commandList.list[1].instrument.currentPeakLevel = val*commandList.list[1].instrument.peakLevel
-		console.log(val)
+		var biggest = Math.max(commandList.list[1].instrument.sustainLevel,commandList.list[1].instrument.peakLevel)
+		commandList.list[1].instrument.currentSustainLevel = val*commandList.list[1].instrument.sustainLevel/biggest
+		commandList.list[1].instrument.currentPeakLevel = val*commandList.list[1].instrument.peakLevel/biggest
 	});
 	$("#instrument2").on('input', function () {
 		var val = Math.max($(this).val()/100.0,0.00001)
-		commandList.list[2].instrument.currentSustainLevel = val*commandList.list[2].instrument.sustainLevel
-		commandList.list[2].instrument.currentPeakLevel = val*commandList.list[2].instrument.peakLevel
+		var biggest = Math.max(commandList.list[2].instrument.sustainLevel,commandList.list[2].instrument.peakLevel)
+		commandList.list[2].instrument.currentSustainLevel = val*commandList.list[2].instrument.sustainLevel/biggest
+		commandList.list[2].instrument.currentPeakLevel = val*commandList.list[2].instrument.peakLevel/biggest
 	});
 	$("#instrument3").on('input', function () {
 		var val = Math.max($(this).val()/100.0,0.00001)

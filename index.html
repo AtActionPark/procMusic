@@ -15,13 +15,25 @@
     <div class="row text-center" >
       <div class="col-sm-4">
         <h2>GENERATE</h2>
-        <button  onClick="newSong()">Generate</button>
+        <button onClick="newSong()">Generate</button>
+        </br>
+        </br>
+        Max Osc. nb</br>
+        <input type="numberBox" value=4 class="options" id="osc"></input></br>
+        Max Attack ms</br>
+        <input type="numberBox" value=500  class="options" id="attack"></input></br>
+        Max Decay ms</br>
+        <input type="numberBox" value=500  class="options" id="decay"></input></br>
+        Max Release ms</br>
+        <input type="numberBox" value=500  class="options" id="release"></input></br>
+        Max Detune hz</br>
+        <input type="numberBox" value=5  class="options" id="detune"></input></br>
       </div>
       <div class="col-sm-4">
         <h2>RESULT</h2>
         <button id="play">PLAY</button>
         <div id="sequence"></div>
-        <div id="result"></div>
+        <div id="volume"></div>
       </div>
       <div class="col-sm-4">
         <h2>SEED</h2>
