@@ -8,10 +8,10 @@ html, body, div, h1, canvas {
   vertical-align: baseline;
 }
 
-#instrument{
-	height:100px;
-	width:100px;
-	border:1px solid black;
+#sequence{
+	margin-top: 20px;
 }
+
+
 
 

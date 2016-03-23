@@ -5,15 +5,32 @@
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>Test</title>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-    
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
     <script  src="js/pattern.js"></script>
     <script  src="js/Instrument.js"></script>
     <script  src="js/script.js"></script>
     <link rel="stylesheet" type="text/css" href="css/stylesheet.css">
   </head>
   <body>
-  <div id="instrument"></div>
-  <button id="generate" onClick="newSong()">Generate</button>
-  <div id="seed"></div>
+    <div class="row text-center" >
+      <div class="col-sm-4">
+        <h2>GENERATE</h2>
+        <button  onClick="newSong()">Generate</button>
+      </div>
+      <div class="col-sm-4">
+        <h2>RESULT</h2>
+        <button id="play">PLAY</button>
+        <div id="sequence"></div>
+        <div id="result"></div>
+      </div>
+      <div class="col-sm-4">
+        <h2>SEED</h2>
+        <div id="seed"></div>
+        <form id="inputSeed">
+          <input id ="inputSeedVal" type="numberBox"></input>
+          <input type="submit" value="Load">
+        </form>
+      </div>
+    </div>
   </body>
 </html>

@@ -11,17 +11,19 @@ class Instrument{
 		this.releaseTime = releaseTime;	
 		this.drumType = drumType;
 		this.snareRelease = snareRelease
+		this.currentPeakLevel = peakLevel
+		this.currentSustainLevel = sustainLevel
 	}
 
-	addVoice(freq){
+	addVoice(freq,duration){
 		if(this.voice && this.voice[freq])
 			this.voice[freq].stop()
 		this.voices[freq] = new Voice(
 			this.context,
 			freq,
 			this.osc,
-			this.peakLevel,
-			this.sustainLevel,
+			this.currentPeakLevel,
+			this.currentSustainLevel,
 			this.attackTime,
 			this.decayTime,
 			this.releaseTime,
@@ -30,7 +32,7 @@ class Instrument{
 		if(this.drumType)
 			this.voices[freq].trigger()
 		else
-			this.voices[freq].start()
+			this.voices[freq].start(duration)
 	}
 
 	stopVoice(freq){
@@ -70,7 +72,7 @@ class Voice{
 		this.gainNode.gain.value = 0;	
 	}
 
-	start(){
+	start(duration){
 		if(!this.context)
 			return
 		var self = this;
@@ -84,10 +86,10 @@ class Voice{
 		this.gainNode.connect(this.context.destination);
 		this.gainNode.gain.cancelScheduledValues(now)
 	    this.gainNode.gain.setValueAtTime(0,this.context.currentTime );
-	    this.gainNode.gain.linearRampToValueAtTime(this.peakLevel, now + this.attackTime/1000)
-	    this.gainNode.gain.linearRampToValueAtTime(this.sustainLevel, now + this.attackTime/1000 + this.decayTime/1000) 
+	    this.gainNode.gain.linearRampToValueAtTime(this.peakLevel/10, now + this.attackTime/1000)
+	    this.gainNode.gain.linearRampToValueAtTime(this.sustainLevel/10, now + this.attackTime/1000 + this.decayTime/1000) 
 
-	    var release = this.releaseTime/1000;
+	    var release = (duration + this.releaseTime)/1000;
 	    this.gainNode.gain.linearRampToValueAtTime(0,now + release);
 		this.oscillators.forEach(function(oscillator) {
 			oscillator.stop(now + release);
@@ -121,25 +123,37 @@ class Voice{
 	}
 
 	kick(){
+		var nb = 3
+		var d = 0.8
 		var time = this.context.currentTime
+
 		var osc = this.context.createOscillator();
 		var osc2 = this.context.createOscillator();
-		osc2.type = 'sine'
+		var osc3 = this.context.createOscillator();
+
 		osc.connect(this.gainNode);
 		osc2.connect(this.gainNode);
+		osc3.connect(this.gainNode);
 		this.gainNode.connect(this.context.destination);
 
-		osc.frequency.setValueAtTime(150, time);
-		osc2.frequency.setValueAtTime(120, time);
-		this.gainNode.gain.setValueAtTime(1, time);
+		osc.frequency.setValueAtTime(120, time);
+		osc2.frequency.setValueAtTime(150, time);
+		osc3.frequency.setValueAtTime(220, time);
+		this.gainNode.gain.setValueAtTime(this.sustainLevel, time);
 
-		osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
-		osc2.frequency.exponentialRampToValueAtTime(0.01, time + 0.5);
-		this.gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.8);
+		
+		osc.frequency.exponentialRampToValueAtTime(0.01, time +d);
+		osc2.frequency.exponentialRampToValueAtTime(0.01, time +d);
+		osc3.frequency.exponentialRampToValueAtTime(0.01, time +d);
+		this.gainNode.gain.exponentialRampToValueAtTime(0.01, time + 0.3 +d);
 
 		osc.start(time);
+		osc2.start(time);
+		osc3.start(time);
 
-		osc.stop(time + 0.5);
+		osc.stop(time + d);
+		osc2.stop(time + d);
+		osc3.stop(time + d);
 	}
 
 	snare(){
@@ -159,12 +173,12 @@ class Voice{
 
 		this.oscEnvelope = this.context.createGain();
 		this.osc.connect(this.oscEnvelope);
-		this.noiseEnvelope.gain.setValueAtTime(0.5, time);
+		this.noiseEnvelope.gain.setValueAtTime(this.sustainLevel/2, time);
 		this.noiseEnvelope.gain.exponentialRampToValueAtTime(0.01, time + this.snareRelease);
 		this.noise.start(time)
 
 		this.osc.frequency.setValueAtTime(100, time);
-		this.oscEnvelope.gain.setValueAtTime(0.7, time);
+		this.oscEnvelope.gain.setValueAtTime(this.sustainLevel, time);
 		this.oscEnvelope.gain.exponentialRampToValueAtTime(0.01, time + 0.1);
 		this.osc.start(time)
 
@@ -197,20 +211,26 @@ class Voice{
 		// Create the oscillators
 		ratios.forEach(function(ratio) {
 		  var osc = self.context.createOscillator();
+		  var osc2 = self.context.createOscillator();
 		  osc.type = "square";
+		  osc2.type = "triangle";
 		  // Frequency is the fundamental * this oscillator's ratio
 		  osc.frequency.value = fundamental * ratio;
+		  osc2.frequency.value = fundamental * ratio ;
 		  osc.connect(bandpass);
+		  osc2.connect(bandpass);
 		  osc.start(when);
+		  osc2.start(when);
 		  osc.stop(when + 0.3);
+		  osc2.stop(when + 0.3);
 		});
 
 		// Define the volume envelope
 		this.gainNode.gain.setValueAtTime(0.00001, when);
-		this.gainNode.gain.exponentialRampToValueAtTime(1, when + 0.02);
-		this.gainNode.gain.exponentialRampToValueAtTime(0.3, when + 0.03);
+		this.gainNode.gain.exponentialRampToValueAtTime(this.sustainLevel, when + 0.02);
+		this.gainNode.gain.exponentialRampToValueAtTime(this.sustainLevel/3.0, when + 0.03);
 		this.gainNode.gain.exponentialRampToValueAtTime(0.00001, when + 2);
-			}
+	}
 }
 
 noiseBuffer = function(context) {

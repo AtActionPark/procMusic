@@ -38,17 +38,18 @@ var scales = {
 var tempo = 60.0
 var maxOscNumber = 4
 var minAttackLevel = 0.05;
-var maxAttackLevel = 0.3;
+var maxAttackLevel = 1;
 var minSustainLevel = 0.05;
-var maxSustainLevel = 0.3;
+var maxSustainLevel = 1;
 var minAttackTime = 1.0;
-var maxAttackTime = 1000.0;
+var maxAttackTime = 500.0;
 var minDecayTime = 1.0;
-var maxDecayTime = 1000.0;
+var maxDecayTime = 500.0;
 var minReleaseTime = 1.0;
-var maxReleaseTime = 1000.0;
+var maxReleaseTime = 500.0;
 var maxDetune = 5;
 var seqPow2 = true;
+var nbOfInstr = 3;
 
 
 var run;
@@ -57,49 +58,56 @@ var max = 1
 var pause = true;
 var commandList;
 
-var c1init;
-var c2init;
-
 
 $(document).ready(function(){
 	seed = 100*Math.random()
-	//seed = 70.03951725907298
+	//seed = 59.15919079982497
 
-	//var p = new Pattern(8,5)
-	//console.log(p.bjorklund(8,5))
-
-	$('#seed').html(seed)
+	$('#seed').html('Current : ' )
 	tempo = 1/tempo*60*1000/4
 	commandList = new CommandList();
 
-	var root = pickRandomProperty(rootNotes)
-	//commandList = RandomCommandList(3,root,1,5)
-	commandList = customSong()
-	console.log(commandList)
-
-	$('#instrument').mousedown(function(){
+	$('#play').mousedown(function(){
 		pause = !pause
-		loop(commandList.list)
+		$('#play').html(pause? 'PLAY': 'PAUSE')
+		//customSong()
+	})
+	$('#inputSeed').submit(function(event){
+		event.preventDefault()
+		reset()
+		$('#play').html('PAUSE')
+		seed = $("#inputSeedVal").val();
+		$('#seed').html('Current : ' + seed)
+		generateRandomSong()
 	})
 });
 
-function newSong(){
-	reset()
+function generateRandomSong(){
 	var t = rand()
 	seqPow2 = t>0.5? true: false
 	var root = pickRandomProperty(rootNotes)
 	commandList.reset();
 	commandList = new CommandList()
 	commandList.randomize(3,root,1,5)
-	//commandList.list = RandomCommandList(new AudioContext,3,root,1,5)
 	createDrums(commandList.context2).forEach(function(d){
 		commandList.list.push(d)
 	})
 	console.log(commandList)	
-	loop(commandList.list)
+	loop()
+	$('#sequence').html(cursor+1 + ' / ' + max)
+	displayResult()
+}
+
+function newSong(){
+	reset()
+	generateRandomSong()
 }
 
 function customSong(){
+	commandList.reset();
+	commandList = new CommandList()
+	var c1 = commandList.context1
+	var c2 = commandList.context2
 	//scale(rootNote,minOctave.maxOctave)    
 	var scale1= generateNaturalMinorScale('C',5,6)
 	var scale2= randomScale('C',3,5)
@@ -113,10 +121,8 @@ function customSong(){
 	var seq5 = new Sequence(8,scale3,0,0.5,0.5)
 	var seq6 = new Sequence(8,scale3,0,0,1)
 
-	c1init = new AudioContext;
-	c2init = new AudioContext;
 	var instr1 = new Instrument(
-		c1init,
+		c1,
 		[[0,'sine'],[5,'sine']], //oscillators (detune,wave)
 		0.9, //attack peak level
 		0.5, //sustain level
@@ -124,7 +130,7 @@ function customSong(){
 		100.0, //decay
 		50.0) //release
 	var instr2 = new Instrument(
-		c1init,
+		c1,
 		[[4,'triangle'],[5,'sawtooth'],[-5,'sine']], //oscillators (detune,wave)
 		0.1, //attack peak level
 		0.2, //sustain level
@@ -132,16 +138,16 @@ function customSong(){
 		100.0, //decay
 		50.0) //release
 	var instr3 = new Instrument(
-		c1init,
+		c1,
 		[[0,'sawtooth'],[5,'sine']], //oscillators (detune,wave)
-		0.3, //attack peak level
-		0.1, //sustain level
+		0.4, //attack peak level
+		0.3, //sustain level
 		50.0, //attack
-		100.0, //decay
-		50.0) //release
+		1000.0, //decay
+		500.0) //release
 
 	var kick = new Instrument(
-		c2init,
+		c2,
 		[], //oscillators (detune,wave)
 		0.6, //attack peak level
 		0.2, //sustain level
@@ -149,7 +155,7 @@ function customSong(){
 		100.0, //decay
 		50.0,'kick') //release
 	var snare = new Instrument(
-		c2init,
+		c2,
 		[], //oscillators (detune,wave)
 		0.6, //attack peak level
 		0.2, //sustain level
@@ -157,7 +163,7 @@ function customSong(){
 		100.0, //decay
 		50.0,'snare',1) //release
 	var hihat = new Instrument(
-		c2init,
+		c2,
 		[], //oscillators (detune,wave)
 		0.6, //attack peak level
 		0.2, //sustain level
@@ -165,16 +171,16 @@ function customSong(){
 		100.0, //decay
 		50.0,'hihat') //release
 
-	var command1 = new Command(c1init,instr1,seq1)
-	var command2 = new Command(c1init,instr2,seq2)
-	var command3 = new Command(c1init,instr3,seq3)
-	var command4 = new Command(c2init,kick,seq4)
-	var command5 = new Command(c2init,snare,seq5)
-	var command6 = new Command(c2init,hihat,seq6)
+	var command1 = new Command(c1,instr1,seq1)
+	var command2 = new Command(c1,instr2,seq2)
+	var command3 = new Command(c1,instr3,seq3)
+	var command4 = new Command(c2,kick,seq4)
+	var command5 = new Command(c2,snare,seq5)
+	var command6 = new Command(c2,hihat,seq6)
 
-	var commandList = new CommandList()
 	commandList.list = [command1,command2,command3,command4,command5,command6]
-	return commandList
+	console.log(commandList)
+	loop(commandList.list)
 }
 
 function createDrums(c){
@@ -186,24 +192,24 @@ function createDrums(c){
 	var kick = new Instrument(
 		c,
 		[], //oscillators (detune,wave)
-		0.6, //attack peak level
-		0.2, //sustain level
+		0.5, //attack peak level
+		0.5, //sustain level
 		50.0, //attack
 		100.0, //decay
 		50.0,'kick') //release
 	var snare = new Instrument(
 		c,
 		[], //oscillators (detune,wave)
-		0.6, //attack peak level
-		0.2, //sustain level
+		0.5, //attack peak level
+		0.5, //sustain level
 		50.0, //attack
 		100.0, //decay
 		50.0,'snare',getRandomFloat(0.1,1)) //release
 	var hihat = new Instrument(
 		c,
 		[], //oscillators (detune,wave)
-		0.6, //attack peak level
-		0.2, //sustain level
+		0.5, //attack peak level
+		0.5, //sustain level
 		50.0, //attack
 		100.0, //decay
 		50.0,'hihat') //release
@@ -214,22 +220,23 @@ function createDrums(c){
 	return [command1,command2,command3]
 }
 
-function loop(commandList){
-	for(var i = 0;i<commandList.length;i++){
-		max = lcm(max,commandList[i].sequence.s.length)
-		console.log(commandList[i].sequence.s.length)
+function loop(){
+	var c = commandList.list
+	for(var i = 0;i<c.length;i++){
+		max = lcm(max,c[i].sequence.s.length)
 	}
-	run = setInterval(function(){play(commandList)}, tempo);
+	run = setInterval(function(){play(c)}, tempo);
 }
 
-function play(commandList){
+function play(){
+	var com = commandList.list
 	if(pause)
 		return
-	$('#instrument').html(cursor+1 + ' / ' + max)
-	for(var i = 0;i<commandList.length;i++){
+	$('#sequence').html(cursor+1 + ' / ' + max)
+	for(var i = 0;i<com.length;i++){
 		var played = {}
-		var instr = commandList[i].instrument
-		var Sequence = commandList[i].sequence
+		var instr = com[i].instrument
+		var Sequence = com[i].sequence
 		var sequence = Sequence.s
 		var notes = Sequence.scale
 
@@ -241,11 +248,11 @@ function play(commandList){
 			n.forEach(function(m){
 				var freq = notes[m];
 		    	if(freq && !played[notes[m]]) {
-		        	instr.addVoice(freq,sequence[c][0][1]*tempo-20);
+		        	instr.addVoice(freq,sequence[c][0][1]*(tempo-20));
 		        	played[notes[m]] = true;
 		    	}
 			})
-    })  
+    	})  
 	}
     cursor += 1;
     if(cursor>=max)
@@ -253,16 +260,9 @@ function play(commandList){
 }
 
 function reset(){
-	if(c1init || c2init){
-		c1init.close()
-		c2init.close()
-		c1init = null;
-		c2init = null
-	}
-	
 	clearInterval(run);
 	seed = 100*Math.random()
-	$('#seed').html(seed)
+	$('#seed').html('Current : ' + seed)
 	console.log(seed)
 	max = 1
 	cursor = 0;
@@ -270,6 +270,56 @@ function reset(){
 		commandList[i].kill()
 	}
 	pause = false;
+	$('#play').html('PAUSE')
+}
+
+function displayResult(){
+	$('#result').empty()
+	$('#result').append('</br>')
+	for(var i = 0;i<commandList.list.length;i++){
+		var type = commandList.list[i].instrument.drumType
+		if (typeof(type) == typeof(undefined))
+			type = 'instr' + i
+		if(i == 3)
+		$('#result').append('- - - - -</br></br>')
+		$('#result').append(type + " : " + commandList.list[i].sequence.s.length + " steps </br>")
+		$('#result').append('<input id="instrument'+i+'" type="range" value='+commandList.list[i].instrument.sustainLevel*100 + ' min=0 max=100></input></br>')
+	}
+	reloadVolumes()
+}
+
+function reloadVolumes(){
+	$("#instrument0").on('input', function () {
+		var val = Math.max($(this).val()/100.0,0.00001)
+		commandList.list[0].instrument.currentSustainLevel = val*commandList.list[0].instrument.sustainLevel
+		commandList.list[0].instrument.currentPeakLevel = val*commandList.list[0].instrument.peakLevel
+	});
+	$("#instrument1").on('input', function () {
+		var val = Math.max($(this).val()/100.0,0.00001)
+		commandList.list[1].instrument.currentSustainLevel = val*commandList.list[1].instrument.sustainLevel
+		commandList.list[1].instrument.currentPeakLevel = val*commandList.list[1].instrument.peakLevel
+		console.log(val)
+	});
+	$("#instrument2").on('input', function () {
+		var val = Math.max($(this).val()/100.0,0.00001)
+		commandList.list[2].instrument.currentSustainLevel = val*commandList.list[2].instrument.sustainLevel
+		commandList.list[2].instrument.currentPeakLevel = val*commandList.list[2].instrument.peakLevel
+	});
+	$("#instrument3").on('input', function () {
+		var val = Math.max($(this).val()/100.0,0.00001)
+		commandList.list[3].instrument.currentSustainLevel = val*commandList.list[3].instrument.sustainLevel
+		commandList.list[3].instrument.currentPeakLevel = val*commandList.list[3].instrument.peakLevel
+	});
+	$("#instrument4").on('input', function () {
+		var val = Math.max($(this).val()/100.0,0.00001)
+		commandList.list[4].instrument.currentSustainLevel = val*commandList.list[4].instrument.sustainLevel
+		commandList.list[4].instrument.currentPeakLevel = val*commandList.list[4].instrument.peakLevel
+	});
+	$("#instrument5").on('input', function () {
+		var val = Math.max($(this).val()/100.0,0.00001)
+		commandList.list[5].instrument.currentSustainLevel = val*commandList.list[5].instrument.sustainLevel
+		commandList.list[5].instrument.currentPeakLevel = val*commandList.list[5].instrument.peakLevel
+	});
 }
 
 
@@ -282,7 +332,7 @@ function randomInstrument(context, detune){
 	for(var i = 0;i<oscNb;i++){
 		osc.push([getRandomInt(-detune,detune),getRandomWave()])
 	}
-	return  new Instrument(
+	return new Instrument(
 		context,
 		osc, //oscillators (detune,wave)
 		getRandomFloat(minAttackLevel,maxAttackLevel), //attack peak level
@@ -373,7 +423,7 @@ function getNextNote(note,offset){
 		newIndex-=12
 	return notes[newIndex]
 }
-function extendScale(scale, lowOctave,highOctave){
+function extendScale(scale,lowOctave,highOctave){
 	var notes = {}
 	for (var prop in scale){
 		for(var octave = lowOctave; octave<highOctave;octave++){
@@ -540,11 +590,11 @@ function getRandomWave(){
 
 
 // Establish the parameters of the generator
-var m = 25,
-    // a - 1 should be divisible by m's prime factors
-    a = 11,
-    // c and m should be co-prime
-    c = 17;
+var m = 25;
+// a - 1 should be divisible by m's prime factors
+var a = 11;
+// c and m should be co-prime
+var c = 17;
 // Setting the seed
 var seed = 0;
 var rand = function() {
