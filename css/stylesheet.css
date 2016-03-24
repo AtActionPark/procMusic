@@ -15,3 +15,7 @@ html, body, div, h1, canvas {
 .options{
   width:100px;
 }
+
+.disabled{
+	color:grey;
+}

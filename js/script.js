@@ -35,7 +35,10 @@ var scales = {
 	13:'shit',
 }
 
-var tempo = 60.0
+var tempo = 60.0;
+var nbOfInstr = 3;
+var maxSeqLength = 32
+
 var maxOscNumber = 4
 var minAttackLevel = 0.1;
 var maxAttackLevel = 1;
@@ -49,7 +52,7 @@ var minReleaseTime = 1.0;
 var maxReleaseTime = 500.0;
 var maxDetune = 5
 var seqPow2 = true;
-var nbOfInstr = 3;
+
 
 
 var run;
@@ -64,6 +67,7 @@ $(document).ready(function(){
 	seed = 100*Math.random()
 	//seed = 4-59.15919079982497
 	//seed = 4-82.47033844409417
+	//seed = 4-18.005146154056728
 
 	$('#seed').html('Current : ' )
 	tempo = 1/tempo*60*1000/4
@@ -74,19 +78,23 @@ $(document).ready(function(){
 		$('#play').html(pause? 'PLAY': 'PAUSE')
 		//customSong()
 	})
+	$('#play').prop('disabled',true)
+	$('#play').addClass('disabled')
+
 	$('#inputSeed').submit(function(event){
 		event.preventDefault()
 		reset()
 		$('#play').html('PAUSE')
+		$('#play').prop('disabled',false)
+		$('#play').removeClass('disabled')
 		falseSeed = $('#inputSeedVal').val()
 		console.log(falseSeed)
 		seed = falseSeed.match(/-(.*)/)[1]
 		maxOscNumber = falseSeed.match(/(\w*)/)[0]
-		$('#osc').val(maxOscNumber)
-
-		console.log(seed)
+		$('#osc').val(maxOscNumber+1)
 		$('#seed').html('Current : ' + falseSeed)
 		generateRandomSong()
+		
 	})
 });
 
@@ -109,6 +117,8 @@ function generateRandomSong(){
 function newSong(){
 	reset()
 	generateRandomSong()
+	$('#play').prop('disabled',false)
+	$('#play').removeClass('disabled')
 }
 
 function customSong(){
@@ -269,7 +279,7 @@ function play(){
 
 function reset(){
 	clearInterval(run);
-	maxOscNumber = $('#osc').val()
+	maxOscNumber = $('#osc').val()-1
 	maxAttackTime = $('#attack').val()
 	maxDecayTime = $('#decay').val()
 	maxReleaseTime = $('#release').val()
@@ -337,6 +347,14 @@ function reloadVolumes(){
 	});
 }
 
+function save(){
+	var saved = '';
+	saved=maxOscNumber+'-'+maxAttackTime+'-'+maxDecayTime+'-'+maxReleaseTime+'-'+maxDetune+'-';
+	saved+= $("#instrument0").val() + '-' + $("#instrument1").val() + '-' + $("#instrument2").val() + '-' + $("#instrument3").val() + '-' + $("#instrument4").val() + '-' + $("#instrument5").val() + '-'
+	saved+=seed;
+	return saved
+}
+
 
 
 
@@ -360,7 +378,7 @@ function randomSequence(scale, pow2){
 	var addNote = rand()
 	if (pow2)
 		return new Sequence(getRandomPow2(),scale,rand(),rand()/2,rand())
-	return new Sequence(getRandomInt(2,32),scale,rand(),rand()/2,rand())
+	return new Sequence(getRandomInt(2,maxSeqLength),scale,rand(),rand()/2,rand())
 }
 function randomScale(root,min,max){
 	var minOctave = getRandomInt(1,6);
@@ -423,7 +441,7 @@ function randomScale(root,min,max){
 }
 
 
-function generateScale(intervals,rootNote, lowOctave,highOctave){
+function generateScale(intervals,rootNote,lowOctave,highOctave){
 	var scale = {};
 	scale[rootNote] = rootNotes[rootNote]
 	for(var i =0;i<intervals.length;i++)
