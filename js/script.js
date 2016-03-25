@@ -38,6 +38,7 @@ var scales = {
 var tempo = 60.0;
 var nbOfInstr = 3;
 var maxSeqLength = 32
+var maxPow2 = 6
 
 var maxOscNumber = 4
 var minAttackLevel = 0.1;
@@ -62,12 +63,16 @@ var pause = true;
 var commandList;
 var falseSeed
 
+var count = 0
+var change = false
+var onlyPow2 = true
+
 
 $(document).ready(function(){
 	seed = 100*Math.random()
-	//seed = 4-59.15919079982497
-	//seed = 4-82.47033844409417
-	//seed = 4-18.005146154056728
+	//seed = 1-4-59.15919079982497
+	//seed = 1-4-82.47033844409417
+	//seed = 1-4-18.005146154056728
 
 	$('#seed').html('Current : ' )
 	tempo = 1/tempo*60*1000/4
@@ -81,26 +86,32 @@ $(document).ready(function(){
 	$('#play').prop('disabled',true)
 	$('#play').addClass('disabled')
 
+	$("#loop").on('change',function(){change = !change;count = cursor})
+	$("#even").on('change',function(){onlyPow2 = !onlyPow2})
+
 	$('#inputSeed').submit(function(event){
 		event.preventDefault()
 		reset()
 		$('#play').html('PAUSE')
 		$('#play').prop('disabled',false)
 		$('#play').removeClass('disabled')
-		falseSeed = $('#inputSeedVal').val()
-		console.log(falseSeed)
-		seed = falseSeed.match(/-(.*)/)[1]
-		maxOscNumber = falseSeed.match(/(\w*)/)[0]
-		$('#osc').val(maxOscNumber+1)
+		falseSeed = $('#inputSeedVal').val().trim()
+		seed = falseSeed.match(/(?:[^-\n]+-){2}(.*)$/)[1]
+		maxOscNumber = falseSeed.match(/-(\w*)/)[1]
+		onlyPow2 = falseSeed.match(/^(.*?)-/)[1] != 0
+		if(onlyPow2)
+			seqPow2 = true;
+		$('#osc').val(parseInt(maxOscNumber)+1)
 		$('#seed').html('Current : ' + falseSeed)
+		$('#even').prop('checked', onlyPow2);
 		generateRandomSong()
-		
 	})
 });
 
 function generateRandomSong(){
 	var t = rand()
-	seqPow2 = t>0.5? true: false
+	if(!onlyPow2)
+			seqPow2 = t>0.5? true: false
 	var root = pickRandomProperty(rootNotes)
 	commandList.reset();
 	commandList = new CommandList()
@@ -247,6 +258,16 @@ function loop(){
 }
 
 function play(){
+	if(change){
+		count+=1
+		if(count>max || count>150){
+			newSong()
+			count = 0
+			return;
+		}
+	}
+	
+
 	var com = commandList.list
 	if(pause)
 		return
@@ -284,11 +305,15 @@ function reset(){
 	maxDecayTime = $('#decay').val()
 	maxReleaseTime = $('#release').val()
 	maxDetune = $('#detune').val()
+	onlyPow2 = $('#even').is(":checked")
 	
 	seed = 100*Math.random()
-	falseSeed = maxOscNumber + '-' + seed
+	var onlyPow2Int = onlyPow2 ? 1 : 0
+	falseSeed = onlyPow2Int + '-' + maxOscNumber + '-' + seed
 	$('#seed').html('Current : ' + falseSeed)
-	//console.log(falseSeed)
+	console.log(falseSeed)
+	if(onlyPow2)
+			seqPow2 = true;
 	max = 1
 	cursor = 0;
 	for(var i = 0;i<commandList.length;i++){
@@ -610,7 +635,7 @@ function getRandomInt(a,b){
 }
 
 function getRandomPow2(a,b){
-	return Math.pow(2,getRandomInt(2,6))
+	return Math.pow(2,getRandomInt(2,maxPow2))
 }
 
 function getRandomWave(){
