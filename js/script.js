@@ -54,8 +54,6 @@ var maxReleaseTime = 500.0;
 var maxDetune = 5
 var seqPow2 = true;
 
-
-
 var run;
 var cursor = 0;
 var max = 1
@@ -258,6 +256,8 @@ function loop(){
 }
 
 function play(){
+	if(pause)
+		return
 	if(change){
 		count+=1
 		if(count>max || count>150){
@@ -269,8 +269,7 @@ function play(){
 	
 
 	var com = commandList.list
-	if(pause)
-		return
+	
 	$('#sequence').html(cursor+1 + ' / ' + max)
 	for(var i = 0;i<com.length;i++){
 		var played = {}
@@ -305,6 +304,8 @@ function reset(){
 	maxDecayTime = $('#decay').val()
 	maxReleaseTime = $('#release').val()
 	maxDetune = $('#detune').val()
+	tempo = $('#tempo').val()
+	tempo = 1/tempo*60*1000/4
 	onlyPow2 = $('#even').is(":checked")
 	
 	seed = 100*Math.random()
@@ -316,6 +317,7 @@ function reset(){
 			seqPow2 = true;
 	max = 1
 	cursor = 0;
+	count = 0
 	for(var i = 0;i<commandList.length;i++){
 		commandList[i].kill()
 	}
